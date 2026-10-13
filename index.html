@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PostPilot – Schedule LinkedIn Posts</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0A66C2;
+      --primary-dark: #004182;
+      --surface: #ffffff;
+      --bg: #f3f2ef;
+      --text: #1d2226;
+      --text-muted: #5f6368;
+      --border: #e0e0e0;
+      --danger: #cc1016;
+      --success: #057642;
+      --radius: 8px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; color: var(--primary); text-decoration: none; }
+    .nav-brand svg { width: 28px; height: 28px; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn { padding: 8px 18px; border-radius: 20px; font-size: .875rem; font-weight: 600; cursor: pointer; border: none; transition: all .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+    .btn-outline:hover { background: #e8f0fe; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: .88; }
+    .btn-sm { padding: 5px 12px; font-size: .8rem; }
+
+    /* HERO */
+    .hero { padding: 64px 24px 48px; text-align: center; }
+    .hero h1 { font-size: 2.5rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; color: var(--text); }
+    .hero h1 span { color: var(--primary); }
+    .hero p { font-size: 1.1rem; color: var(--text-muted); max-width: 520px; margin: 0 auto 32px; }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .linkedin-btn { background: var(--primary); color: #fff; padding: 14px 28px; border-radius: 24px; font-size: 1rem; font-weight: 700; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; transition: background .15s; }
+    .linkedin-btn:hover { background: var(--primary-dark); }
+    .linkedin-btn svg { width: 22px; height: 22px; }
+
+    /* FEATURES */
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto 56px; padding: 0 24px; }
+    .feature-card { background: var(--surface); border-radius: var(--radius); padding: 28px 24px; border: 1px solid var(--border); }
+    .feature-icon { font-size: 2rem; margin-bottom: 14px; }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: .875rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* DASHBOARD */
+    #dashboard { display: none; }
+    .dashboard-container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+    .user-bar { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
+    .user-info h4 { font-size: .95rem; font-weight: 700; }
+    .user-info p { font-size: .8rem; color: var(--text-muted); }
+
+    /* COMPOSER */
+    .composer { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; margin-bottom: 24px; }
+    .composer h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+    textarea { width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: .9rem; resize: vertical; min-height: 110px; font-family: inherit; transition: border .15s; }
+    textarea:focus { outline: none; border-color: var(--primary); }
+    .char-count { font-size: .78rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
+    .char-count.over { color: var(--danger); }
+    input[type="datetime-local"] { width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-size: .9rem; font-family: inherit; }
+    input[type="datetime-local"]:focus { outline: none; border-color: var(--primary); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .error-msg { background: #fde8e8; color: var(--danger); border-radius: 6px; padding: 10px 14px; font-size: .875rem; margin-bottom: 16px; display: none; }
+    .success-msg { background: #e6f4ea; color: var(--success); border-radius: 6px; padding: 10px 14px; font-size: .875rem; margin-bottom: 16px; display: none; }
+
+    /* POSTS LIST */
+    .posts-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+    .post-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px 20px; margin-bottom: 12px; }
+    .post-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .post-meta { display: flex; align-items: center; gap: 10px; }
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+    .badge-scheduled { background: #e8f0fe; color: var(--primary); }
+    .badge-published { background: #e6f4ea; color: var(--success); }
+    .badge-failed { background: #fde8e8; color: var(--danger); }
+    .post-time { font-size: .8rem; color: var(--text-muted); }
+    .post-text { font-size: .9rem; line-height: 1.5; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+    .post-platform { font-size: .78rem; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* FOOTER */
+    footer { text-align: center; padding: 32px 24px; color: var(--text-muted); font-size: .8rem; border-top: 1px solid var(--border); margin-top: 40px; }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.75rem; }
+      .form-row { grid-template-columns: 1fr; }
+      .user-bar { flex-direction: column; gap: 12px; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-brand" onclick="showLanding()">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#0A66C2"/>
+      <path d="M7 10h3v11H7V10zm1.5-4.5a1.75 1.75 0 110 3.5 1.75 1.75 0 010-3.5zM13 10h3v1.5c.5-.9 1.7-1.75 3.25-1.75 3 0 3.75 2 3.75 4.5V21h-3v-6c0-1.5-.03-3.5-2.25-3.5-2.25 0-2.75 1.75-2.75 3.5V21h-3V10z" fill="white"/>
+    </svg>
+    PostPilot
+  </a>
+  <div class="nav-right" id="nav-right">
+    <a href="#" class="btn btn-outline" onclick="connectLinkedIn()">Connect LinkedIn</a>
+  </div>
+</nav>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="hero">
+    <h1>Schedule LinkedIn posts<br><span>on autopilot</span></h1>
+    <p>Plan, write, and schedule your LinkedIn content in advance. Stay consistent without the daily grind.</p>
+    <div class="hero-actions">
+      <a href="#" class="linkedin-btn" onclick="connectLinkedIn(); return false;">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        Get Started with LinkedIn
+      </a>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">✍️</div>
+      <h3>Write Once, Post Later</h3>
+      <p>Draft posts whenever inspiration strikes and schedule them for the perfect moment.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <h3>Smart Scheduling</h3>
+      <p>Pick the exact date and time for each post. Our scheduler handles the rest automatically.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Track Everything</h3>
+      <p>See which posts published successfully and manage your content queue with ease.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Secure LinkedIn Auth</h3>
+      <p>Login securely with your LinkedIn account. We never store your password.</p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="dashboard-container">
+    <div class="user-bar">
+      <div class="user-info">
+        <div class="avatar" id="user-avatar">?</div>
+        <div>
+          <h4 id="user-name">Loading...</h4>
+          <p id="user-email">Connected to LinkedIn</p>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="logout()">Sign Out</button>
+    </div>
+
+    <!-- COMPOSER -->
+    <div class="composer">
+      <h2>📝 New Scheduled Post</h2>
+      <div class="error-msg" id="compose-error"></div>
+      <div class="success-msg" id="compose-success"></div>
+      <div class="form-group">
+        <label>Post Content</label>
+        <textarea id="post-text" placeholder="What do you want to share on LinkedIn? Share insights, tips, achievements..." oninput="updateCharCount()" maxlength="3000"></textarea>
+        <div class="char-count" id="char-count">0 / 3000</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Schedule Date & Time</label>
+          <input type="datetime-local" id="scheduled-at" />
+        </div>
+        <div class="form-group">
+          <label>Platform</label>
+          <select style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:.9rem;font-family:inherit;" id="platform">
+            <option value="linkedin">LinkedIn</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="schedulePost()" id="submit-btn" style="width:100%;padding:12px;font-size:.95rem;">
+        Schedule Post
+      </button>
+    </div>
+
+    <!-- POSTS -->
+    <div class="posts-section">
+      <h2>📋 Your Scheduled Posts</h2>
+      <div id="posts-list">
+        <div class="empty-state"><div class="icon">📭</div><p>Loading your posts...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  &copy; 2024 PostPilot &mdash; Automate your LinkedIn presence
+</footer>
+
+<script>
+  const API = 'https://postpilot-tr8j.onrender.com';
+
+  // Set default datetime to 1hr from now
+  const dtInput = document.getElementById('scheduled-at');
+  const now = new Date(Date.now() + 60 * 60 * 1000);
+  dtInput.value = now.toISOString().slice(0, 16);
+
+  function showLanding() {
+    document.getElementById('landing').style.display = '';
+    document.getElementById('dashboard').style.display = 'none';
+  }
+
+  function showDashboard() {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('dashboard').style.display = '';
+    document.getElementById('nav-right').innerHTML = '<button class="btn btn-outline btn-sm" onclick="logout()">Sign Out</button>';
+    loadUser();
+    loadPosts();
+  }
+
+  function connectLinkedIn() {
+    window.location.href = API + '/auth/linkedin';
+  }
+
+  async function loadUser() {
+    try {
+      const r = await fetch(API + '/auth/me', { credentials: 'include' });
+      if (!r.ok) { showLanding(); return; }
+      const u = await r.json();
+      const initials = (u.name || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+      document.getElementById('user-avatar').textContent = initials;
+      document.getElementById('user-name').textContent = u.name || 'LinkedIn User';
+      document.getElementById('user-email').textContent = u.email || 'LinkedIn Connected';
+    } catch { showLanding(); }
+  }
+
+  async function loadPosts() {
+    const container = document.getElementById('posts-list');
+    try {
+      const r = await fetch(API + '/api/posts', { credentials: 'include' });
+      if (!r.ok) throw new Error();
+      const posts = await r.json();
+      if (!posts.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🗓️</div><p>No posts scheduled yet.<br>Write your first post above!</p></div>';
+        return;
+      }
+      container.innerHTML = posts.map(p => `
+        <div class="post-card" id="post-${p._id}">
+          <div class="post-header">
+            <div class="post-meta">
+              <span class="badge badge-${p.status}">${p.status}</span>
+              <span class="post-time">📅 ${formatDate(p.scheduledAt)}</span>
+            </div>
+            ${p.status === 'scheduled' ? `<button class="btn btn-danger btn-sm" onclick="deletePost('${p._id}')">Delete</button>` : ''}
+          </div>
+          <div class="post-text">${escapeHtml(p.text)}</div>
+          <div class="post-platform">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+            ${p.errorMessage ? `<span style="color:var(--danger);margin-left:8px;">⚠️ ${escapeHtml(p.errorMessage)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch {
+      container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Could not load posts.<br>Please refresh.</p></div>';
+    }
+  }
+
+  async function schedulePost() {
+    const btn = document.getElementById('submit-btn');
+    const errorEl = document.getElementById('compose-error');
+    const successEl = document.getElementById('compose-success');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    const text = document.getElementById('post-text').value.trim();
+    const scheduledAt = document.getElementById('scheduled-at').value;
+    const platform = document.getElementById('platform').value;
+
+    if (!text) { showError('Please write something for your post.'); return; }
+    if (text.length > 3000) { showError('Post is too long. Max 3000 characters.'); return; }
+    if (!scheduledAt) { showError('Please pick a schedule date and time.'); return; }
+    if (new Date(scheduledAt) <= new Date()) { showError('Schedule time must be in the future.'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Scheduling...';
+    try {
+      const r = await fetch(API + '/api/posts', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, scheduledAt, platform })
+      });
+      const data = await r.json();
+      if (!r.ok) { showError(data.error || 'Failed to schedule post.'); return; }
+      successEl.textContent = '✅ Post scheduled successfully!';
+      successEl.style.display = 'block';
+      document.getElementById('post-text').value = '';
+      document.getElementById('char-count').textContent = '0 / 3000';
+      // Reset time to 1hr from now
+      const newDt = new Date(Date.now() + 60 * 60 * 1000);
+      document.getElementById('scheduled-at').value = newDt.toISOString().slice(0, 16);
+      loadPosts();
+      setTimeout(() => { successEl.style.display = 'none'; }, 4000);
+    } catch { showError('Network error. Is the server running?'); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Schedule Post';
+    }
+  }
+
+  async function deletePost(id) {
+    if (!confirm('Delete this scheduled post?')) return;
+    try {
+      const r = await fetch(API + '/api/posts/' + id, { method: 'DELETE', credentials: 'include' });
+      if (r.ok) { document.getElementById('post-' + id)?.remove(); loadPosts(); }
+      else { alert('Could not delete post.'); }
+    } catch { alert('Network error.'); }
+  }
+
+  async function logout() {
+    await fetch(API + '/auth/logout', { method: 'POST', credentials: 'include' });
+    showLanding();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('compose-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function updateCharCount() {
+    const len = document.getElementById('post-text').value.length;
+    const el = document.getElementById('char-count');
+    el.textContent = `${len} / 3000`;
+    el.className = 'char-count' + (len > 3000 ? ' over' : '');
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Check if user is already logged in (e.g., after OAuth redirect)
+  (async () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error')) {
+      alert('LinkedIn login failed: ' + params.get('error'));
+      history.replaceState({}, '', '/');
+      return;
+    }
+    try {
+      const r = await fetch(API + '/auth/me', { credentials: 'include' });
+      if (r.ok) showDashboard();
+    } catch {}
+  })();
+</script>
+</body>
+</html>
