@@ -227,10 +227,18 @@ function authHeaders() {
   return t ? { 'Authorization': 'Bearer ' + t } : {};
 }
 
-// Set default datetime to 1hr from now
+// Set default datetime to 1hr from now in local timezone
 const dtInput = document.getElementById('scheduled-at');
-const now = new Date(Date.now() + 60 * 60 * 1000);
-dtInput.value = now.toISOString().slice(0, 16);
+function formatLocalDateTime(date) {
+  const pad = n => String(n).padStart(2, '0');
+  const y = date.getFullYear();
+  const m = pad(date.getMonth() + 1);
+  const d = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const mm = pad(date.getMinutes());
+  return `${y}-${m}-${d}T${hh}:${mm}`;
+}
+dtInput.value = formatLocalDateTime(new Date(Date.now() + 60 * 60 * 1000));
 
 function showLanding() {
 document.getElementById('landing').style.display = '';
@@ -326,7 +334,7 @@ document.getElementById('post-text').value = '';
 document.getElementById('char-count').textContent = '0 / 3000';
 // Reset time to 1hr from now
 const newDt = new Date(Date.now() + 60 * 60 * 1000);
-document.getElementById('scheduled-at').value = newDt.toISOString().slice(0, 16);
+document.getElementById('scheduled-at').value = formatLocalDateTime(newDt);
 loadPosts();
 setTimeout(() => { successEl.style.display = 'none'; }, 4000);
 } catch { showError('Network error. Is the server running?'); }
@@ -368,7 +376,8 @@ return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle:
 }
 
 function escapeHtml(s) {
-return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(\/"/g,'&quot;');
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // On page load: grab token from URL (after OAuth redirect) or from localStorage
